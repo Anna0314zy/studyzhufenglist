@@ -3,6 +3,7 @@ let request = require('request');
 let bodyParser = require('body-parser');
 let app = express();
 var fs = require("fs");
+const query = require('./db.js');
 app.use(bodyParser.json());//这是处理JSON格式的请求体
 app.use(bodyParser.urlencoded({ extended: true }));//这是处理表单格式的请求体
 app.get('/list', async function (req, res) {
@@ -15,15 +16,18 @@ app.get('/list', async function (req, res) {
     headers: {
       Cookie: '_ga_RPQ8W9GP8M=GS1.1.1681711716.1.1.1681711718.0.0.0; _ga=GA1.2.2112217781.1662625420; online-uuid=22F6C2B9-2EF2-082C-2659-81179E3BF4EC; PHPSESSID=0nati0ngjoojhj0imvi9h27ror; REMEMBERME=Qml6XFVzZXJcQ3VycmVudFVzZXI6ZFhObGNsOXNOWGN6ZUhFNGVHOUFaV1IxYzI5b2J5NXVaWFE9OjE3MjI1MDAwMzI6NDI5NmE2NzgwNjkwZWQzZDMwOTJlOGI0MmFlNzgzMjQwYjFlYjkzN2Y0NGNjYjYxZTI0OTJmNTY1M2I4MDc4Mw%3D%3D'
     }
-  }, function (err, response, body) {
-   
+  }, async function (err, response, body) {
+   const page = isNaN(req.query?.page) ? 1 : req.query?.page
+   console.log(isNaN(req.query?.page),page,typeof page,'page')
+   await  query(`INSERT INTO list(page,html) VALUES(?,?)`,[page,response.body]);
     res.send(response.body);
   });
 
 
 });
 app.get('/detail', async function (req, res) {
-  const url = 'https://www.javascriptpeixun.cn/my/course/3415'
+  // const url = 'https://www.javascriptpeixun.cn/my/course/3415'
+  const url = "http://www.javascriptpeixun.cn/course/3408/task/list/render/default"
   console.log(url,'url')
   await request({
     url,
@@ -31,7 +35,7 @@ app.get('/detail', async function (req, res) {
       Cookie: '_ga_RPQ8W9GP8M=GS1.1.1681711716.1.1.1681711718.0.0.0; _ga=GA1.2.2112217781.1662625420; online-uuid=22F6C2B9-2EF2-082C-2659-81179E3BF4EC; PHPSESSID=0nati0ngjoojhj0imvi9h27ror; REMEMBERME=Qml6XFVzZXJcQ3VycmVudFVzZXI6ZFhObGNsOXNOWGN6ZUhFNGVHOUFaV1IxYzI5b2J5NXVaWFE9OjE3MjI1MDAwMzI6NDI5NmE2NzgwNjkwZWQzZDMwOTJlOGI0MmFlNzgzMjQwYjFlYjkzN2Y0NGNjYjYxZTI0OTJmNTY1M2I4MDc4Mw%3D%3D'
     }
   }, function (err, response, body) {
-    console.log( response.body,'response.body')
+    console.log( response,'response.body')
     fs.writeFile('1.html', response.body,  function(err) {
       if (err) {
           return console.error(err);
