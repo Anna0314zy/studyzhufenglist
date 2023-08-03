@@ -5,7 +5,7 @@ let connection = mysql.createConnection({
     port:3306,
     database:'zf',
     user:'root',
-    password:'123456'
+    password:'a1234567'
 });
 connection.connect();
 module.exports = Promise.promisify(connection.query).bind(connection);

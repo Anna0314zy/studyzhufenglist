@@ -4,20 +4,8 @@ import styles from './index.less';
 export default function Layout() {
   return (
     <div className={styles.navs}>
-      <ul>
-        <li>
-          <Link to="/list">list</Link>
-        </li>
-        <li>
-          <Link to="/detail">detail</Link>
-        </li>
-        <li>
-          <Link to="/docs">Docs</Link>
-        </li>
-        <li>
-          <a href="https://github.com/umijs/umi">Github</a>
-        </li>
-      </ul>
+      welcome to umi
+     
       <Outlet />
     </div>
   );

@@ -4,11 +4,11 @@ import axios from 'axios'
 const DocsPage = () => {
   const [data,setData] = useState<any>({__html: ''})
   const params = new URL(window.location.href).searchParams
-
+  
   useEffect(() => {
-    axios.get(`/api/list?page=${params.get('page')}`).then(res => {
-      console.log(res.data,'res')
-      // setData(res.data)
+    const url = params.get('page') ? `/api/list?page=${params.get('page')}`:`/api/list`
+    axios.get(url).then(res => {
+      console.log(res,'res--')
       document.write(res.data)
     })
   },[params])

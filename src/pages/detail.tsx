@@ -1,20 +1,25 @@
-
-import {useEffect, useState} from 'react'
-import axios from 'axios'
-
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useParams } from 'react-router-dom';
 
 const DocsPage = () => {
-  const params = new URL(window.location.href).searchParams
+  const routerParams = useParams<{
+    id: string;
+  }>();
+
+  const params = new URL(window.location.href).searchParams;
   useEffect(() => {
-    axios.get(`/api/detail`).then(res => {
-      console.log(res.data,'res')
-      // setData(res.data)
-      document.write(res.data)
-    })
-  },[params])
+    const id = routerParams.id;
+    const base = `/api/detail?id=${id}`;
+    axios.get(base).then((res) => {
+      // 获取一部分页面结构
+      // document.write(res.data);
+      // 请求页面中需要的详情数据
+    });
+  }, [routerParams.id]);
   return (
     <div>
-      <p>This is umi 详情.</p>
+      <p>This is umi 详情----.</p>
     </div>
   );
 };
