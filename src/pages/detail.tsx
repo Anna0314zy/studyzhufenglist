@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
-
+import {message} from 'antd'
 const DocsPage = () => {
   const routerParams = useParams<{
     id: string;
@@ -12,6 +12,8 @@ const DocsPage = () => {
     const id = routerParams.id;
     const base = `/api/detail?id=${id}`;
     axios.get(base).then((res) => {
+      console.log(res,'data--')
+      message.success('success')
       // 获取一部分页面结构
       // document.write(res.data);
       // 请求页面中需要的详情数据
