@@ -46,6 +46,12 @@ app.get('/list', async function (req, res) {
 //     }
 //   );
 // });
+const setData = async(id)=> {
+  const head = await query(`SELECT title FROM detail WHERE articleId = ? `, [id]);
+  const data = await query(`SELECT * FROM detailData WHERE articleId = ? `, [id]);
+  console.log(head, 'head');
+  return { head: head[0]?.title, data }
+}
 app.get('/detail', async function (req, res) {
   const id = req.query?.id;
   const url = `https://www.javascriptpeixun.cn/my/course/${id}`;
@@ -57,14 +63,16 @@ app.get('/detail', async function (req, res) {
       },
     },
     async function (err, response, body) {
-      // course-detail-heading
+
       const $ = cheerio.load(response.body);
-     
       const title = $('.breadcrumb li').last().text();
-      console.log(title,'--ddddd-',)
-      const has =  await query(`SELECT * FROM detail WHERE articleId = ? `, [id]);
-    console.log(has,'has')
-      if(has.length) return res.send('success')
+      const head = await query(`SELECT title FROM detail WHERE articleId = ? `, [id]);
+      const detailData = await query(`SELECT * FROM detailData WHERE articleId = ? `, [id]);
+      if(head?.length && data?.length) {
+       const res1 = await setData(id);
+       res.send(res1);
+       return
+      }
       await query(`INSERT INTO detail(articleId,html,title) VALUES(?,?,?)`, [id, response.body, title]);
       const url = `https://www.javascriptpeixun.cn/course/${id}/task/list/render/default`;
       // const url = "https://www.javascriptpeixun.cn/course/3397/task/list/render/default"
@@ -92,10 +100,10 @@ app.get('/detail', async function (req, res) {
           }
         }
       );
-
-      res.send('success');// data 是一个数组 数值是 detailData 里面的数据
+      const res2 = await setData(id);
+       res.send(res2);
     }
   );
 });
-app.listen(3000);
+app.listen(3001);
 //id 数组
