@@ -6,7 +6,7 @@ var fs = require('fs');
 const query = require('./db.js');
 const cheerio = require('cheerio');
 const Cookie =
-  '_ga_RPQ8W9GP8M=GS1.1.1681711716.1.1.1681711718.0.0.0; _ga=GA1.2.2112217781.1662625420; online-uuid=22F6C2B9-2EF2-082C-2659-81179E3BF4EC; PHPSESSID=0nati0ngjoojhj0imvi9h27ror; REMEMBERME=Qml6XFVzZXJcQ3VycmVudFVzZXI6ZFhObGNsOXNOWGN6ZUhFNGVHOUFaV1IxYzI5b2J5NXVaWFE9OjE3MjI1MDAwMzI6NDI5NmE2NzgwNjkwZWQzZDMwOTJlOGI0MmFlNzgzMjQwYjFlYjkzN2Y0NGNjYjYxZTI0OTJmNTY1M2I4MDc4Mw%3D%3D';
+  '_gid=GA1.2.450067700.1690956954; online-uuid=AF267BFE-C328-80C9-E7F7-977470EA6766; _gat_gtag_UA_140025935_1=1; PHPSESSID=0ks9o6sj9naum1hkvj0lf4b456; REMEMBERME=Qml6XFVzZXJcQ3VycmVudFVzZXI6ZFhObGNsOXNOWGN6ZUhFNGVHOUFaV1IxYzI5b2J5NXVaWFE9OjE3MjI2OTM3ODM6M2FhNDFkMzMwYzc1ZjUwZTVlNTE4NjQzNzZhNWMyNDYxZjY2MDE2NzY3YjI4MmFmNzJmN2Y3MjFhZTAyNmY4OQ%3D%3D;';
 app.use(bodyParser.json()); //这是处理JSON格式的请求体
 app.use(bodyParser.urlencoded({ extended: true })); //这是处理表单格式的请求体
 app.get('/list', async function (req, res) {
@@ -46,12 +46,13 @@ app.get('/list', async function (req, res) {
 //     }
 //   );
 // });
-const setData = async(id)=> {
+const setData = async (id) => {
   const head = await query(`SELECT title FROM detail WHERE articleId = ? `, [id]);
   const data = await query(`SELECT * FROM detailData WHERE articleId = ? `, [id]);
+  const summary = await query(`SELECT summary FROM detailData WHERE articleId = ? `, [id]);
   console.log(head, 'head');
-  return { head: head[0]?.title, data }
-}
+  return { head: head[0]?.title, data, summary: summary[0]?.summary };
+};
 app.get('/detail', async function (req, res) {
   const id = req.query?.id;
   const url = `https://www.javascriptpeixun.cn/my/course/${id}`;
@@ -63,17 +64,21 @@ app.get('/detail', async function (req, res) {
       },
     },
     async function (err, response, body) {
-
       const $ = cheerio.load(response.body);
       const title = $('.breadcrumb li').last().text();
       const head = await query(`SELECT title FROM detail WHERE articleId = ? `, [id]);
       const detailData = await query(`SELECT * FROM detailData WHERE articleId = ? `, [id]);
-      if(head?.length && data?.length) {
-       const res1 = await setData(id);
-       res.send(res1);
-       return
+      const summary = await query(`SELECT summary FROM detailData WHERE articleId = ? `, [id]);
+      if (head?.length && detailData?.length && summary?.length) {
+        const res1 = await setData(id);
+        res.send(res1);
+        return;
       }
-      await query(`INSERT INTO detail(articleId,html,title) VALUES(?,?,?)`, [id, response.body, title]);
+      await query(`INSERT INTO detail(articleId,html,title) VALUES(?,?,?)`, [
+        id,
+        response.body,
+        title,
+      ]);
       const url = `https://www.javascriptpeixun.cn/course/${id}/task/list/render/default`;
       // const url = "https://www.javascriptpeixun.cn/course/3397/task/list/render/default"
       await request(
@@ -85,23 +90,41 @@ app.get('/detail', async function (req, res) {
         },
         async function (err, response, body) {
           let $ = cheerio.load(response.body);
-          const data =JSON.parse($('.js-hidden-cached-data').text())
-        
-          for (let i = 0; i <= (data).length; i++) {
+          const data = JSON.parse($('.js-hidden-cached-data').text());
+
+          for (let i = 0; i <= data.length; i++) {
             // console.log(data[i], 'data[i]');
             const obj = data[i];
-            if(!obj?.itemType) return;
             // UPDATE Person SET Address = 'Zhongshan 23', City = 'Nanjing'，WHERE LastName = 'Wilson'
             // await query(`UPDATE detailData SET (itemType,number,title,activityLength) VALUES(?,?,?,?,?) ，WHERE id=${id}`,[obj.itemType,obj.number,obj.title,obj.activityLength]);
-            await query(
-              `INSERT INTO detailData(articleId,itemType,number,title,activityLength) VALUES(?,?,?,?,?)`,
-              [id, obj.itemType, obj.number, obj.title, obj.activityLength]
-            );
+            if (obj?.itemType) {
+              await query(
+                `INSERT INTO detailData(articleId,itemType,number,title,activityLength) VALUES(?,?,?,?,?)`,
+                [id, obj.itemType, obj.number, obj.title, obj.activityLength]
+              );
+            }
           }
+
+          const summaryUrl = `http://www.javascriptpeixun.cn/my/course/${id}/summary?type=summary`;
+          console.log(summaryUrl, 'summaryUrl');
+          await request(
+            {
+              url: summaryUrl,
+              headers: {
+                Cookie,
+              },
+            },
+            async (err, response, body) => {
+              let $ = cheerio.load(response.body);
+              const html = $('.es-piece').html();
+              await query(`UPDATE detailData SET summary=? WHERE articleId=?`, [html, id]);
+              const res2 = await setData(id);
+              res.send(res2);
+            }
+          );
+         
         }
       );
-      const res2 = await setData(id);
-       res.send(res2);
     }
   );
 });
